@@ -1,0 +1,7 @@
+{
+  "name": "@factory/expo-plugin-baseline",
+  "version": "0.1.0",
+  "private": true,
+  "main": "app.plugin.js",
+  "peerDependencies": { "expo": "*" }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "app-factory",
+  "private": true,
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "doctor": "pnpm -r --if-present run doctor",
+    "check": "pnpm run typecheck && pnpm run doctor"
+  }
+}

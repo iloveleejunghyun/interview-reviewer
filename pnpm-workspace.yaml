@@ -1,0 +1,6 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+# Hoisted layout: Expo supports isolated installs, but some React Native
+# libraries still break under them. Fewer surprises matters more here.
+nodeLinker: hoisted
