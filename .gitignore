@@ -44,3 +44,6 @@ android/
 .env
 .env.*
 !.env.example
+
+# Signing credentials (profiles, keys): never commit
+credentials/
