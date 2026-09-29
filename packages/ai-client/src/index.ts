@@ -35,3 +35,6 @@ export interface TextModelProvider {
 }
 
 export { fileFormData } from './upload';
+export { AIServiceError } from './errors';
+export { createVolcengineTranscriber } from './volcengine';
+export { createQianfanTextModel } from './qianfan';

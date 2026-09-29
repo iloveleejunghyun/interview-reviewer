@@ -3,18 +3,20 @@
 // config plugin, which adds the iOS `audio` background mode.
 import {
   AudioModule,
-  RecordingPresets,
   setAudioModeAsync,
   useAudioRecorder,
   useAudioRecorderState,
+  type RecordingOptions,
 } from 'expo-audio';
 import { useCallback } from 'react';
+
+import { SPEECH_PRESET } from './presets';
 
 export type StartResult = { ok: true } | { ok: false; reason: 'permission-denied' };
 export type Recording = { uri: string; durationMs: number };
 
-export function useRecorder() {
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+export function useRecorder(options: RecordingOptions = SPEECH_PRESET) {
+  const recorder = useAudioRecorder(options);
   const state = useAudioRecorderState(recorder);
 
   const start = useCallback(async (): Promise<StartResult> => {
