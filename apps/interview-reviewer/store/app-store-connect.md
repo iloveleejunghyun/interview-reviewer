@@ -23,7 +23,7 @@ Record your interview, then see every question you were asked, how you answered,
 
 **Description**
 ```
-You walk out of an interview and the questions start to blur. What exactly did they ask? What did you say? Interview Reviewer remembers for you, and tells you what to fix before the next one.
+You walk out of an interview and the questions start to blur. What exactly did they ask? What did you say? Now you'll know, and you'll know what to fix before the next one.
 
 HOW IT WORKS
 1. Tap Record and put your phone near the speaker (or on the table for in-person interviews). You can lock the screen; recording keeps going.
@@ -45,9 +45,14 @@ Always get the interviewer's permission before recording.
 ```
 
 **Keywords (≤100 chars)**
-`interview,job interview,feedback,practice,recorder,transcribe,career,coach,answers,job search`
+`job,feedback,practice,recorder,transcribe,career,coach,answers,hiring,mock,questions,prep,behavioral`
 
-**Screenshots**: 6.9" display (1320×2868), in `store/screenshots/`, in this order:
+(If the app name doesn't contain "interview", swap `prep` for `interview`: the name's words are already searchable, so they shouldn't be repeated here.)
+
+**Screenshots**, in this order. Use the folder matching the slot App Store Connect shows:
+- 6.5" display (1284×2778): `store/screenshots/6.5in/`
+- 6.9" display (1320×2868): `store/screenshots/6.9in/`
+
 1. `01-recording.png`
 2. `02-home.png`
 3. `03-review-summary.png`
@@ -60,14 +65,15 @@ Answer **Yes, we collect data**, then declare exactly these. Everything else: no
 
 | Data type | Purpose | Linked to user? | Used for tracking? |
 |---|---|---|---|
-| User Content → **Audio Data** | App Functionality | No | No |
-| User Content → **Other User Content** (transcripts) | App Functionality | No | No |
+| User Content → **Audio Data** | App Functionality | Yes (recordings can contain names) | No |
+| User Content → **Other User Content** (transcripts sent to Qianfan) | App Functionality | Yes | No |
+| Location → **Coarse Location** (PostHog GeoIP: country/city from IP) | Analytics | No | No |
+| Identifiers → **Device ID** (PostHog's random install ID; not IDFA/IDFV) | Analytics | No | No |
 | Usage Data → **Product Interaction** | Analytics | No | No |
-| Identifiers → **Device ID** (PostHog's random install ID) | Analytics | No | No |
+| Diagnostics → **Crash Data** (PostHog JS error reports) | Analytics | No | No |
 
-Notes:
-- Audio and transcripts are sent to Volcengine and Baidu Qianfan for processing. Whether they keep copies is governed by their terms, so declaring these as collected is the conservative choice.
-- The Device ID row is also conservative: it's a random ID the app creates, not the advertising identifier. If App Review questions it, it can be removed.
+Not collected: precise location, contact info, and everything else.
+
 - No ATT prompt is needed: nothing is used for tracking.
 
 ## App Review information
@@ -100,5 +106,5 @@ The app also reminds users to get the interviewer's permission before recording.
 
 - [ ] Clean build, and version/build number checked in the uploaded build (1.0.0 / 1)
 - [ ] Privacy policy URL loads in a browser
-- [ ] Screenshots are the iPhone ones in `store/screenshots/`
+- [ ] Screenshots are the iPhone ones from `store/screenshots/6.5in/` (or `6.9in/`)
 - [ ] Availability excludes China mainland

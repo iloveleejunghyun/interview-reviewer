@@ -26,10 +26,17 @@ export function createAnalytics<E extends EventMap>(opts: {
     };
   }
 
+  // Keep in sync with the App Store privacy label: product events, an
+  // app-generated ID, GeoIP (country/city from the IP → "Coarse Location"),
+  // and JS error reports (→ "Crash Data"). Console capture stays off: logged
+  // text could include user content.
   const client = new PostHog(opts.apiKey, {
     host: opts.host ?? 'https://us.i.posthog.com',
     captureAppLifecycleEvents: true,
     enableSessionReplay: false,
+    errorTracking: {
+      autocapture: { uncaughtExceptions: true, unhandledRejections: true, console: false },
+    },
   });
 
   return {
