@@ -88,7 +88,7 @@ HOW TO TEST
 1. Launch the app and answer the one-question survey.
 2. Read the consent screen and tap Agree. It names the two AI services that process the audio and transcript (Volcengine and Baidu Qianfan) and what each does. Nothing is recorded or sent before the user agrees.
 3. Tap "Record interview" and allow microphone access.
-4. Play any mock job interview video (for example, search YouTube for "mock job interview") on another device, for AT LEAST 1 MINUTE, with the phone nearby. A few seconds of speech is not enough to review; the app will say so rather than produce an empty review.
+4. Play any mock job interview video (for example, search YouTube for "mock job interview") on another device, for AT LEAST 1 MINUTE, with the phone nearby. A few seconds of speech is not enough to review; the app shows "Not enough speech to review" instead of an empty review.
 5. Tap Stop. The interview appears in the list; after about a minute it shows "Review ready". Tap it to see the question-by-question review.
 
 BACKGROUND AUDIO (UIBackgroundModes: audio)

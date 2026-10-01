@@ -46,7 +46,19 @@ export function InterviewScreen({ interview, index, onBack, onRetry }: Props) {
           <Text style={styles.statusText}>
             {interview.status === 'reviewing' ? 'Reviewing your answers…' : 'Transcribing the recording…'}
           </Text>
-          <Text style={styles.hint}>This takes about a minute. Keep the app open.</Text>
+          <Text style={styles.hint}>
+            This takes about a minute. If you leave the app, it continues when you come back.
+          </Text>
+        </View>
+      )}
+
+      {interview.status === 'no-speech' && (
+        <View style={styles.center}>
+          <Text style={styles.statusText}>Not enough speech to review</Text>
+          <Text style={styles.hint}>
+            The recording didn't pick up enough of the conversation. Next time, put the phone close to the speaker,
+            and don't use headphones on the interview device.
+          </Text>
         </View>
       )}
 

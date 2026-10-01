@@ -14,6 +14,7 @@ const STATUS_LABEL: Record<InterviewStatus, string> = {
   reviewing: 'Reviewing…',
   done: 'Review ready',
   failed: 'Failed. Tap to retry',
+  'no-speech': 'Not enough speech',
 };
 
 type Props = {

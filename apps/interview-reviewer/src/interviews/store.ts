@@ -6,7 +6,9 @@ import { Directory, File, Paths } from 'expo-file-system';
 
 import type { Review } from './review';
 
-export type InterviewStatus = 'recorded' | 'transcribing' | 'reviewing' | 'done' | 'failed';
+// 'no-speech': too little speech to review. Final, not an error: retrying
+// would send the same audio and get the same result.
+export type InterviewStatus = 'recorded' | 'transcribing' | 'reviewing' | 'done' | 'failed' | 'no-speech';
 
 export type Interview = {
   id: string;
@@ -17,6 +19,9 @@ export type Interview = {
   error?: string;
   // Step that failed, so Retry resumes there instead of starting over.
   failedStep?: 'transcribe' | 'review';
+  // Network/timeout/interrupted failures; retried automatically when the app
+  // is back in the foreground.
+  retryable?: boolean;
   transcript?: Transcript;
   review?: Review;
 };

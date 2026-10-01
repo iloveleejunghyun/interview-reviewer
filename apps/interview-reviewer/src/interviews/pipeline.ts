@@ -1,7 +1,7 @@
 // Recording -> transcript (Volcengine) -> review (Qianfan). Each step's result
 // is saved before the next starts, so a failure can be retried from where it
 // stopped. Failures are stored with the real error message; nothing is faked.
-import { createQianfanTextModel, createVolcengineTranscriber } from '@factory/ai-client';
+import { AIServiceError, createQianfanTextModel, createVolcengineTranscriber } from '@factory/ai-client';
 
 import { analytics } from '../analytics';
 import { formatTranscript, parseReview, REVIEW_SYSTEM_PROMPT } from './review';
@@ -18,6 +18,12 @@ const reviewer = createQianfanTextModel({
 // Below this many characters there's nothing an interview review can say.
 const MIN_TRANSCRIPT_CHARS = 200;
 
+// iOS suspends the app soon after it leaves the foreground, which kills
+// in-flight requests. Those failures (and app-closed interruptions) are
+// retried automatically when the user comes back.
+const isRetryable = (e: unknown) =>
+  e instanceof AIServiceError && (e.code === 'network' || e.code === 'timeout');
+
 export async function processInterview(start: Interview, onUpdate: (i: Interview) => void) {
   let current = start;
   const update = (patch: Partial<Interview>) => {
@@ -25,32 +31,33 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
     saveInterview(current);
     onUpdate(current);
   };
+  const fail = (step: 'transcribe' | 'review', e: unknown) =>
+    update({ status: 'failed', failedStep: step, error: (e as Error).message, retryable: isRetryable(e) });
 
   if (!current.transcript) {
-    update({ status: 'transcribing', error: undefined, failedStep: undefined });
+    update({ status: 'transcribing', error: undefined, failedStep: undefined, retryable: undefined });
+    let transcript;
     try {
-      const transcript = await transcriber.transcribeFile(audioUri(current), { language: 'en' });
-      const chars = transcript.segments.reduce((n, s) => n + s.text.length, 0);
-      if (chars < MIN_TRANSCRIPT_CHARS) {
-        throw new Error(
-          chars === 0
-            ? 'No speech was detected in this recording.'
-            : 'Too little speech was detected to review. Was the phone close to the speaker?',
-        );
-      }
-      analytics.track('transcript_succeeded', {
-        duration_sec: Math.round(current.durationMs / 1000),
-        speakers: transcript.speakers.length,
-      });
-      update({ transcript });
+      transcript = await transcriber.transcribeFile(audioUri(current), { language: 'en' });
     } catch (e) {
       analytics.track('transcript_failed', { reason: (e as Error).message.slice(0, 200) });
-      update({ status: 'failed', failedStep: 'transcribe', error: (e as Error).message });
+      fail('transcribe', e);
       return;
     }
+    const chars = transcript.segments.reduce((n, s) => n + s.text.length, 0);
+    if (chars < MIN_TRANSCRIPT_CHARS) {
+      analytics.track('transcript_failed', { reason: 'no_speech' });
+      update({ status: 'no-speech' });
+      return;
+    }
+    analytics.track('transcript_succeeded', {
+      duration_sec: Math.round(current.durationMs / 1000),
+      speakers: transcript.speakers.length,
+    });
+    update({ transcript });
   }
 
-  update({ status: 'reviewing', error: undefined, failedStep: undefined });
+  update({ status: 'reviewing', error: undefined, failedStep: undefined, retryable: undefined });
   try {
     const raw = await reviewer.complete({
       system: REVIEW_SYSTEM_PROMPT,
@@ -59,12 +66,12 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
     });
     update({ status: 'done', review: parseReview(raw) });
   } catch (e) {
-    update({ status: 'failed', failedStep: 'review', error: (e as Error).message });
+    fail('review', e);
   }
 }
 
-// Requests don't survive the app being killed or suspended mid-step. On
-// launch, anything still "in progress" was interrupted: mark it retryable.
+// On launch, anything still "in progress" was interrupted by the app closing.
+// Mark it retryable so it resumes automatically.
 export function markInterrupted(i: Interview): Interview {
   if (i.status !== 'transcribing' && i.status !== 'reviewing') return i;
   const fixed: Interview = {
@@ -72,6 +79,7 @@ export function markInterrupted(i: Interview): Interview {
     status: 'failed',
     failedStep: i.transcript ? 'review' : 'transcribe',
     error: 'Processing was interrupted when the app closed.',
+    retryable: true,
   };
   saveInterview(fixed);
   return fixed;

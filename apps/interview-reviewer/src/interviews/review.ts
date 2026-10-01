@@ -25,14 +25,15 @@ export const REVIEW_SYSTEM_PROMPT = `You are an experienced interview coach. You
 
 The transcript is imperfect:
 - Speaker labels may be wrong: turns can be merged, split, or assigned to the wrong speaker, and there may be extra speakers. Decide who is the interviewer and who is the candidate from the content, not the labels.
-- Words may be misheard, and some questions may be missing entirely. Check every candidate turn: if it answers something no preceding question asked (e.g. the candidate criticizes their current employer right after an unrelated question), the real question is missing. Reconstruct the most likely question, add it as its own item, and mark it "inferred": true. Never attach an answer to a question it does not answer.
+- Words may be misheard, and some questions may be missing entirely. Check every candidate turn: if it answers something no preceding question asked (e.g. the candidate criticizes their current employer right after an unrelated question), the real question is missing. Reconstruct the most likely question, add it as its own item, and mark it "inferred": true. Never attach an answer to a question it does not answer. Only reconstruct a question when a specific candidate answer needs it; never invent questions, and never put [placeholders] in a question.
 
 Return ONLY a JSON object, in the same language as the interview, with this shape:
 {
   "questions": [
     {
       "question": "the interviewer's question, cleaned up",
-      "inferred": false,
+      "kind": "assessed" | "small_talk",
+      "inferred": false (true ONLY if the question itself is missing from the transcript),
       "timestamp": "mm:ss where the question starts",
       "answerSummary": "1-2 sentences: what the candidate actually said",
       "rating": "strong" | "ok" | "weak",
@@ -46,7 +47,10 @@ Return ONLY a JSON object, in the same language as the interview, with this shap
   }
 }
 
-Include every interviewer question, in order, including small talk like "tell me about yourself" and "do you have questions for me". Be direct and specific; this candidate wants honest feedback before their next interview.
+List every interviewer question, in order, and set "kind":
+- "small_talk": greetings ("how are you doing today?"), audio/tool checks ("can you hear me?", "are you familiar with CoderPad?", "can you open the link / run some code in the editor?"), scheduling and next-steps chatter. For these, keep the other fields short.
+- "assessed": everything that tests the candidate, including "tell me about yourself" and "do you have any questions for me?". If one turn mixes a greeting with a real question (e.g. "Thanks for joining. Tell me about yourself."), it is "assessed".
+Be direct and specific; this candidate wants honest feedback before their next interview.
 
 STRONGER ANSWER RULES (most important):
 - Use ONLY facts the candidate actually said. Improve structure, framing and wording; never add facts.
@@ -81,9 +85,17 @@ export function parseReview(raw: string): Review {
   if (!Array.isArray(data?.questions) || data.questions.length === 0) {
     throw new Error('The review contained no interview questions.');
   }
+  // Small talk is tagged by the model and dropped here: tagging is far more
+  // reliable than asking the model to leave it out.
+  // Safety net: these openers/closers are always worth reviewing.
+  const ALWAYS_ASSESSED = /about yourself|questions for (me|us)|walk me through your (background|resume)/i;
+  const assessed = data.questions.filter(
+    (q: any) => q?.kind !== 'small_talk' || ALWAYS_ASSESSED.test(String(q?.question ?? '')),
+  );
+  if (assessed.length === 0) throw new Error('The review contained no interview questions.');
   return {
-    questions: data.questions.map((q: any) => ({
-      question: String(q.question ?? ''),
+    questions: assessed.map((q: any) => ({
+      question: String(q.question ?? '').replace(/^\s*inferred:\s*/i, ''),
       inferred: q.inferred === true,
       timestamp: String(q.timestamp ?? ''),
       answerSummary: String(q.answerSummary ?? ''),
