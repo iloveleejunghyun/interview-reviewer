@@ -5,6 +5,7 @@
   "scripts": {
     "typecheck": "pnpm -r --if-present run typecheck",
     "doctor": "pnpm -r --if-present run doctor",
-    "check": "pnpm run typecheck && pnpm run doctor"
+    "check": "pnpm run typecheck && pnpm run doctor",
+    "ios:device": "scripts/ios-device.sh"
   }
 }
