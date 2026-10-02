@@ -15,7 +15,7 @@ export default function App() {
     <SafeAreaProvider>
       <OnboardingQuestion>
         <ConsentGate
-          appName="Interview Reviewer"
+          appName="InterviewEcho"
           dataSent="your interview recordings and transcripts"
           consentVersion={1}
           onDecision={(d) => analytics.track(d === 'agreed' ? 'consent_agreed' : 'consent_declined')}

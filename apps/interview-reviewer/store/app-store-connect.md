@@ -1,4 +1,4 @@
-# Interview Reviewer: App Store Connect submission
+# InterviewEcho: App Store Connect submission
 
 Everything to paste into App Store Connect for version 1.0.0 (build 1).
 Bundle ID `com.ai12.interviewreviewer` · Team `C8SX4X838D`.
@@ -7,7 +7,7 @@ Bundle ID `com.ai12.interviewreviewer` · Team `C8SX4X838D`.
 
 | Field | Value |
 |---|---|
-| Name | Interview Reviewer |
+| Name | InterviewEcho |
 | Subtitle (≤30) | AI feedback on real interviews |
 | Primary category | Productivity |
 | Secondary category | Business |
@@ -82,7 +82,7 @@ Not collected: precise location, contact info, and everything else.
 
 **Notes for the reviewer**
 ```
-Interview Reviewer records a job interview and uses AI to review the candidate's answers.
+InterviewEcho records a job interview and uses AI to review the candidate's answers.
 
 HOW TO TEST
 1. Launch the app and answer the one-question survey.
