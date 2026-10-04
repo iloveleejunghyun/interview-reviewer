@@ -80,7 +80,8 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
 // On launch, anything still "in progress" was interrupted by the app closing.
 // Mark it retryable so it resumes automatically.
 export function markInterrupted(i: Interview): Interview {
-  if (i.status !== 'transcribing' && i.status !== 'reviewing') return i;
+  // 'recorded' too: the app can close between saving the recording and starting.
+  if (i.status !== 'recorded' && i.status !== 'transcribing' && i.status !== 'reviewing') return i;
   const fixed: Interview = {
     ...i,
     status: 'failed',
