@@ -17,11 +17,11 @@ export default function App() {
         <ConsentGate
           appName="InterviewEcho"
           dataSent="your interview recordings and transcripts"
-          consentVersion={1}
+          consentVersion={2}
           onDecision={(d) => analytics.track(d === 'agreed' ? 'consent_agreed' : 'consent_declined')}
           recipients={[
             {
-              name: 'Volcengine (ByteDance), China',
+              name: 'AssemblyAI, United States',
               purpose: 'Converts your recording into a transcript.',
             },
             {

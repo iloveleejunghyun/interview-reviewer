@@ -22,6 +22,9 @@ export type Interview = {
   // Network/timeout/interrupted failures; retried automatically when the app
   // is back in the foreground.
   retryable?: boolean;
+  // Server-side transcription job, so an interrupted transcription resumes
+  // polling instead of uploading the audio again.
+  transcriptJobId?: string;
   transcript?: Transcript;
   review?: Review;
 };

@@ -20,7 +20,18 @@ export type Transcript = {
 export interface TranscriptionProvider {
   readonly vendor: string;
   // Long-form file transcription with speaker separation.
-  transcribeFile(fileUri: string, opts: { language: string; signal?: AbortSignal }): Promise<Transcript>;
+  transcribeFile(
+    fileUri: string,
+    opts: {
+      language: string;
+      signal?: AbortSignal;
+      // Async vendors: called once the server-side job exists, so the caller
+      // can persist it and resume polling after an interruption instead of
+      // uploading (and paying for) the audio again.
+      onJobCreated?: (jobId: string) => void;
+      resumeJobId?: string;
+    },
+  ): Promise<Transcript>;
 }
 
 export interface TextModelProvider {
@@ -37,4 +48,5 @@ export interface TextModelProvider {
 export { fileFormData } from './upload';
 export { AIServiceError } from './errors';
 export { createVolcengineTranscriber } from './volcengine';
+export { createAssemblyAITranscriber } from './assemblyai';
 export { createQianfanTextModel } from './qianfan';

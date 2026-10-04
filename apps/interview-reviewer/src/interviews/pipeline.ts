@@ -1,14 +1,14 @@
-// Recording -> transcript (Volcengine) -> review (Qianfan). Each step's result
+// Recording -> transcript (AssemblyAI) -> review (Qianfan). Each step's result
 // is saved before the next starts, so a failure can be retried from where it
 // stopped. Failures are stored with the real error message; nothing is faked.
-import { AIServiceError, createQianfanTextModel, createVolcengineTranscriber } from '@factory/ai-client';
+import { AIServiceError, createAssemblyAITranscriber, createQianfanTextModel } from '@factory/ai-client';
 
 import { analytics } from '../analytics';
 import { formatTranscript, parseReview, REVIEW_SYSTEM_PROMPT } from './review';
 import { audioUri, saveInterview, type Interview } from './store';
 
-const transcriber = createVolcengineTranscriber({
-  apiKey: process.env.EXPO_PUBLIC_VOLCENGINE_ASR_API_KEY,
+const transcriber = createAssemblyAITranscriber({
+  apiKey: process.env.EXPO_PUBLIC_ASSEMBLYAI_API_KEY,
 });
 const reviewer = createQianfanTextModel({
   apiKey: process.env.EXPO_PUBLIC_QIANFAN_API_KEY,
@@ -38,9 +38,16 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
     update({ status: 'transcribing', error: undefined, failedStep: undefined, retryable: undefined });
     let transcript;
     try {
-      transcript = await transcriber.transcribeFile(audioUri(current), { language: 'en' });
+      transcript = await transcriber.transcribeFile(audioUri(current), {
+        language: 'en',
+        resumeJobId: current.transcriptJobId,
+        onJobCreated: (transcriptJobId) => update({ transcriptJobId }),
+      });
     } catch (e) {
       analytics.track('transcript_failed', { reason: (e as Error).message.slice(0, 200) });
+      // A failed or expired job can't be resumed; the next attempt starts a new one.
+      const code = e instanceof AIServiceError ? e.code : undefined;
+      if (code === 'job_error' || code === '404') update({ transcriptJobId: undefined });
       fail('transcribe', e);
       return;
     }
