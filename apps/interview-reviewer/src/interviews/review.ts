@@ -1,6 +1,6 @@
 // Interview review: prompt, transcript formatting and response validation.
-// Prompt tested 2026-09-29 against a two-voice mock interview with
-// ernie-4.5-turbo-128k; the "STRONGER ANSWER RULES" stop it from inventing
+// Prompt tested against two-voice mock interviews with ernie-4.5-turbo-128k
+// and gemini-3.8-flash; the "STRONGER ANSWER RULES" stop it from inventing
 // achievements the candidate never mentioned.
 import type { Transcript } from '@factory/ai-client';
 

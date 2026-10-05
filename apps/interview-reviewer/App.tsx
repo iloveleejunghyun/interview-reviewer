@@ -17,7 +17,7 @@ export default function App() {
         <ConsentGate
           appName="InterviewEcho"
           dataSent="your interview recordings and transcripts"
-          consentVersion={2}
+          consentVersion={3}
           onDecision={(d) => analytics.track(d === 'agreed' ? 'consent_agreed' : 'consent_declined')}
           recipients={[
             {
@@ -25,7 +25,7 @@ export default function App() {
               purpose: 'Converts your recording into a transcript.',
             },
             {
-              name: 'Baidu AI Cloud Qianfan, China',
+              name: 'Google Gemini, United States',
               purpose: 'Analyzes the transcript to review your interview answers.',
             },
           ]}

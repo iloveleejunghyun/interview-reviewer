@@ -50,3 +50,4 @@ export { AIServiceError } from './errors';
 export { createVolcengineTranscriber } from './volcengine';
 export { createAssemblyAITranscriber } from './assemblyai';
 export { createQianfanTextModel } from './qianfan';
+export { createGeminiTextModel } from './gemini';
