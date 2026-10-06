@@ -1,14 +1,16 @@
 import { ConsentGate } from '@factory/consent';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { analytics } from './src/analytics';
+import { BackgroundScreen } from './src/BackgroundScreen';
 import { HomeScreen } from './src/HomeScreen';
 import { InterviewScreen } from './src/InterviewScreen';
 import { useInterviews } from './src/interviews/useInterviews';
 import { OnboardingQuestion } from './src/OnboardingQuestion';
+import { loadBackground, type Background } from './src/profile/background';
 
 export default function App() {
   return (
@@ -16,8 +18,8 @@ export default function App() {
       <OnboardingQuestion>
         <ConsentGate
           appName="InterviewEcho"
-          dataSent="your interview recordings and transcripts"
-          consentVersion={3}
+          dataSent="your interview recordings, transcripts, and resume (if you add one)"
+          consentVersion={4}
           onDecision={(d) => analytics.track(d === 'agreed' ? 'consent_agreed' : 'consent_declined')}
           recipients={[
             {
@@ -26,7 +28,7 @@ export default function App() {
             },
             {
               name: 'Google Gemini, United States',
-              purpose: 'Analyzes the transcript to review your interview answers.',
+              purpose: 'Reads your resume (if you add one) and the transcript to review your interview answers.',
             },
           ]}
         >
@@ -41,6 +43,12 @@ export default function App() {
 function Main() {
   const { interviews, loadError, addRecording, retry } = useInterviews();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [showBackground, setShowBackground] = useState(false);
+  const [background, setBackground] = useState<Background | null>(null);
+
+  useEffect(() => {
+    loadBackground().then(setBackground);
+  }, []);
 
   if (loadError) {
     return (
@@ -50,6 +58,12 @@ function Main() {
     );
   }
   if (!interviews) return <ActivityIndicator style={styles.center} />;
+
+  if (showBackground) {
+    return (
+      <BackgroundScreen background={background} onChange={setBackground} onBack={() => setShowBackground(false)} />
+    );
+  }
 
   const open = openId ? interviews.find((i) => i.id === openId) : undefined;
   if (open) {
@@ -73,6 +87,8 @@ function Main() {
         if (item?.status === 'failed') void retry(item);
         setOpenId(id);
       }}
+      hasBackground={!!background}
+      onOpenBackground={() => setShowBackground(true)}
     />
   );
 }

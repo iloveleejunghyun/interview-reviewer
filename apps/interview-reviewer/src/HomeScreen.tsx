@@ -21,9 +21,11 @@ type Props = {
   interviews: Interview[];
   onRecorded: (uri: string, durationMs: number) => Promise<unknown>;
   onOpen: (id: string) => void;
+  hasBackground: boolean;
+  onOpenBackground: () => void;
 };
 
-export function HomeScreen({ interviews, onRecorded, onOpen }: Props) {
+export function HomeScreen({ interviews, onRecorded, onOpen, hasBackground, onOpenBackground }: Props) {
   const recorder = useRecorder();
   const [message, setMessage] = useState<{ text: string; settings?: boolean } | null>(null);
 
@@ -82,7 +84,20 @@ export function HomeScreen({ interviews, onRecorded, onOpen }: Props) {
         data={interviews}
         keyExtractor={(i) => i.id}
         contentContainerStyle={styles.list}
-        ListHeaderComponent={interviews.length > 0 ? <Text style={styles.heading}>Your interviews</Text> : null}
+        ListHeaderComponent={
+          <>
+            <Pressable style={styles.backgroundCard} onPress={onOpenBackground}>
+              <View style={styles.rowMain}>
+                <Text style={styles.rowTitle}>Your background</Text>
+                <Text style={styles.rowSub}>
+                  {hasBackground ? 'Resume added. Reviews use your experience.' : 'Add your resume for answers based on your experience'}
+                </Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            {interviews.length > 0 && <Text style={styles.heading}>Your interviews</Text>}
+          </>
+        }
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => onOpen(item.id)}>
             <View style={styles.rowMain}>
@@ -111,6 +126,15 @@ const styles = StyleSheet.create({
   error: { color: '#d1242f' },
   link: { fontSize: 16, color: '#1f6feb' },
   list: { paddingHorizontal: 16, paddingBottom: 40 },
+  backgroundCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#f2f4f7',
+    marginBottom: 20,
+  },
+  chevron: { fontSize: 22, color: '#999', marginLeft: 8 },
   heading: { fontSize: 13, fontWeight: '600', color: '#666', textTransform: 'uppercase', marginBottom: 8 },
   row: {
     flexDirection: 'row',

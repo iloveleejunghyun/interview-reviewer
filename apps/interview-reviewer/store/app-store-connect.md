@@ -67,6 +67,7 @@ Answer **Yes, we collect data**, then declare exactly these. Everything else: no
 |---|---|---|---|
 | User Content → **Audio Data** | App Functionality | Yes (recordings can contain names) | No |
 | User Content → **Other User Content** (transcripts sent to Gemini) | App Functionality | Yes | No |
+| Contact Info → **Name**, **Email Address**, **Phone Number** (only if the user adds a resume; the PDF is sent to Gemini) | App Functionality | Yes | No |
 | Location → **Coarse Location** (PostHog GeoIP: country/city from IP) | Analytics | No | No |
 | Identifiers → **Device ID** (PostHog's random install ID; not IDFA/IDFV) | Analytics | No | No |
 | Usage Data → **Product Interaction** | Analytics | No | No |

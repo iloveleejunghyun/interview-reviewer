@@ -16,7 +16,7 @@ type GenerateResponse = {
 export function createGeminiTextModel(opts: { apiKey: string | undefined; model: string }): TextModelProvider {
   return {
     vendor: VENDOR,
-    async complete({ system, prompt, json, signal }) {
+    async complete({ system, prompt, json, files, signal }) {
       if (!opts.apiKey) throw new AIServiceError(VENDOR, 'API key is not configured', 'config');
 
       const res = await fetchWithTimeout(
@@ -27,7 +27,15 @@ export function createGeminiTextModel(opts: { apiKey: string | undefined; model:
           headers: { 'content-type': 'application/json', 'x-goog-api-key': opts.apiKey },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: system }] },
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  ...(files ?? []).map((f) => ({ inline_data: { mime_type: f.mimeType, data: f.base64 } })),
+                  { text: prompt },
+                ],
+              },
+            ],
             generationConfig: {
               temperature: 0.3,
               ...(json ? { responseMimeType: 'application/json' } : {}),

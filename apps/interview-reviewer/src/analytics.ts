@@ -10,6 +10,9 @@ type Events = {
   transcript_succeeded: { duration_sec: number; speakers: number };
   transcript_failed: { reason: string };
   review_opened: { interview_index: number };
+  resume_added: undefined;
+  resume_replaced: undefined;
+  resume_removed: undefined;
 };
 
 export const analytics = createAnalytics<Events>({

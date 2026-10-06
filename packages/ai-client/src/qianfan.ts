@@ -13,8 +13,9 @@ type ChatResponse = {
 export function createQianfanTextModel(opts: { apiKey: string | undefined; model: string }): TextModelProvider {
   return {
     vendor: VENDOR,
-    async complete({ system, prompt, json, signal }) {
+    async complete({ system, prompt, json, files, signal }) {
       if (!opts.apiKey) throw new AIServiceError(VENDOR, 'API key is not configured', 'config');
+      if (files?.length) throw new AIServiceError(VENDOR, 'file input is not supported', 'unsupported');
 
       const res = await fetchWithTimeout(
         VENDOR,

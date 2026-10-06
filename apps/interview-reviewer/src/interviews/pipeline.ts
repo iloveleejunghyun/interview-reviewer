@@ -1,21 +1,13 @@
 // Recording -> transcript (AssemblyAI) -> review (Gemini). Each step's result
 // is saved before the next starts, so a failure can be retried from where it
 // stopped. Failures are stored with the real error message; nothing is faked.
-import { AIServiceError, createAssemblyAITranscriber, createGeminiTextModel } from '@factory/ai-client';
+import { AIServiceError } from '@factory/ai-client';
 
+import { textModel as reviewer, transcriber } from '../ai';
 import { analytics } from '../analytics';
+import { loadBackground } from '../profile/background';
 import { formatTranscript, parseReview, REVIEW_SYSTEM_PROMPT } from './review';
 import { audioUri, saveInterview, type Interview } from './store';
-
-const transcriber = createAssemblyAITranscriber({
-  apiKey: process.env.EXPO_PUBLIC_ASSEMBLYAI_API_KEY,
-});
-// Chosen 2026-10-05 over gemini-2.5-flash and Qianfan: no false "reconstructed"
-// questions, small talk handled, no invented facts, fastest.
-const reviewer = createGeminiTextModel({
-  apiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY,
-  model: 'gemini-3.8-flash',
-});
 
 // Below this many characters there's nothing an interview review can say.
 const MIN_TRANSCRIPT_CHARS = 200;
@@ -68,9 +60,14 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
 
   update({ status: 'reviewing', error: undefined, failedStep: undefined, retryable: undefined });
   try {
+    // The resume, if the user added one, lets stronger answers use their real
+    // experience instead of [placeholders].
+    const background = await loadBackground();
     const raw = await reviewer.complete({
       system: REVIEW_SYSTEM_PROMPT,
-      prompt: `Transcript:\n${formatTranscript(current.transcript!)}`,
+      prompt:
+        (background?.text ? `CANDIDATE RESUME:\n${background.text}\n\n` : '') +
+        `Transcript:\n${formatTranscript(current.transcript!)}`,
       json: true,
     });
     update({ status: 'done', review: parseReview(raw) });

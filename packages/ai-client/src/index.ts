@@ -41,6 +41,8 @@ export interface TextModelProvider {
     prompt: string;
     // Ask for JSON output when the vendor supports it.
     json?: boolean;
+    // Documents sent with the prompt (e.g. a PDF). Vendors without file input throw.
+    files?: { mimeType: string; base64: string }[];
     signal?: AbortSignal;
   }): Promise<string>;
 }
