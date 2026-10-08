@@ -7,7 +7,7 @@ import { textModel as reviewer, transcriber } from '../ai';
 import { analytics } from '../analytics';
 import { loadBackground } from '../profile/background';
 import { formatTranscript, parseReview, REVIEW_SYSTEM_PROMPT } from './review';
-import { audioUri, saveInterview, type Interview } from './store';
+import { audioUri, loadInterviews, saveInterview, type Interview } from './store';
 
 // Below this many characters there's nothing an interview review can say.
 const MIN_TRANSCRIPT_CHARS = 200;
@@ -63,10 +63,12 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
     // The resume, if the user added one, lets stronger answers use their real
     // experience instead of [placeholders].
     const background = await loadBackground();
+    const earlierAreas = await areaNamesBefore(current.createdAt);
     const raw = await reviewer.complete({
       system: REVIEW_SYSTEM_PROMPT,
       prompt:
         (background?.text ? `CANDIDATE RESUME:\n${background.text}\n\n` : '') +
+        (earlierAreas.length ? `AREA NAMES FROM EARLIER INTERVIEWS: ${earlierAreas.join(', ')}\n\n` : '') +
         `Transcript:\n${formatTranscript(current.transcript!)}`,
       json: true,
     });
@@ -74,6 +76,17 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
   } catch (e) {
     fail('review', e);
   }
+}
+
+// Area names already used in earlier reviews (newest first), so the model reuses
+// them for the same topics and scores can be compared across interviews.
+async function areaNamesBefore(createdAt: number): Promise<string[]> {
+  const names = new Set<string>();
+  for (const i of await loadInterviews()) {
+    if (i.createdAt >= createdAt) continue;
+    for (const a of i.review?.areas ?? []) names.add(a.name);
+  }
+  return [...names].slice(0, 40);
 }
 
 // On launch, anything still "in progress" was interrupted by the app closing.

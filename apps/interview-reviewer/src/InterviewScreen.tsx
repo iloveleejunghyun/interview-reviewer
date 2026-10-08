@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { analytics } from './analytics';
 import { formatDate, formatDuration } from './format';
-import type { Rating, ReviewedQuestion } from './interviews/review';
+import { FIXED_AREAS, type AreaScore, type Rating, type ReviewedQuestion } from './interviews/review';
 import type { Interview } from './interviews/store';
 
 const RATING_STYLE: Record<Rating, { label: string; color: string }> = {
@@ -18,11 +18,13 @@ type Props = {
   interview: Interview;
   // 1-based position among all interviews, oldest first (for analytics).
   index: number;
+  // Latest earlier score per area name, for the ↑ ↓ = comparison.
+  previousScores: Map<string, number>;
   onBack: () => void;
   onRetry: () => void;
 };
 
-export function InterviewScreen({ interview, index, onBack, onRetry }: Props) {
+export function InterviewScreen({ interview, index, previousScores, onBack, onRetry }: Props) {
   const done = interview.status === 'done';
 
   useEffect(() => {
@@ -76,6 +78,13 @@ export function InterviewScreen({ interview, index, onBack, onRetry }: Props) {
 
       {done && interview.review && (
         <ScrollView contentContainerStyle={styles.content}>
+          {interview.review.areas && interview.review.areas.length > 0 && (
+            <ScoresCard
+              overall={interview.review.overallScore}
+              areas={interview.review.areas}
+              previousScores={previousScores}
+            />
+          )}
           {interview.review.overall.topImprovements.length > 0 && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Work on these first</Text>
@@ -110,6 +119,55 @@ export function InterviewScreen({ interview, index, onBack, onRetry }: Props) {
   );
 }
 
+// Scores move by ±0.5 between runs on the same answer, so only a change of a
+// full point or more counts as up or down.
+function trend(score: number, previous: number | undefined) {
+  if (previous === undefined) return null;
+  const d = score - previous;
+  if (d >= 1) return { label: `↑ from ${previous}`, color: '#1a7f37' };
+  if (d <= -1) return { label: `↓ from ${previous}`, color: '#d1242f' };
+  return { label: `= ${previous} last time`, color: '#888' };
+}
+
+function ScoresCard({
+  overall,
+  areas,
+  previousScores,
+}: {
+  overall?: number;
+  areas: AreaScore[];
+  previousScores: Map<string, number>;
+}) {
+  // Specific areas first (weakest first: that's what to study), fixed ones last.
+  const sorted = [...areas].sort((a, b) => {
+    const fa = FIXED_AREAS.includes(a.name) ? 1 : 0;
+    const fb = FIXED_AREAS.includes(b.name) ? 1 : 0;
+    return fa - fb || a.score - b.score;
+  });
+  return (
+    <View style={styles.card}>
+      <View style={styles.qHeader}>
+        <Text style={styles.cardTitle}>Scores</Text>
+        {overall !== undefined && <Text style={styles.overall}>Overall {overall}/10</Text>}
+      </View>
+      {sorted.map((a) => {
+        const t = trend(a.score, previousScores.get(a.name));
+        return (
+          <View key={a.name} style={styles.area}>
+            <View style={styles.qHeader}>
+              <Text style={styles.areaName}>{a.name}</Text>
+              <Text style={styles.areaScore}>{a.score}/10</Text>
+            </View>
+            {t && <Text style={[styles.trend, { color: t.color }]}>{t.label}</Text>}
+            {!!a.why && <Text style={styles.body}>{a.why}</Text>}
+            {!!a.tip && <Text style={styles.tip}>Practice: {a.tip}</Text>}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 function QuestionCard({ q }: { q: ReviewedQuestion }) {
   const rating = RATING_STYLE[q.rating];
   return (
@@ -135,6 +193,11 @@ function QuestionCard({ q }: { q: ReviewedQuestion }) {
       {!!q.strongerAnswer && (
         <>
           <Text style={styles.label}>A stronger answer</Text>
+          {q.storySource === 'resume' && (
+            <Text style={styles.storyNote}>
+              Uses a different story from your resume{q.storyNote ? `: ${q.storyNote}` : '.'}
+            </Text>
+          )}
           <Text style={[styles.body, styles.stronger]}>{q.strongerAnswer}</Text>
         </>
       )}
@@ -168,4 +231,11 @@ const styles = StyleSheet.create({
   body: { fontSize: 15, lineHeight: 21, color: '#333' },
   stronger: { backgroundColor: '#eef6ff', borderRadius: 8, padding: 10, overflow: 'hidden' },
   footnote: { fontSize: 12, color: '#888', textAlign: 'center', marginTop: 8 },
+  overall: { fontSize: 16, fontWeight: '700', color: '#1f6feb' },
+  area: { paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#e3e5e8', gap: 3 },
+  areaName: { fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 },
+  areaScore: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  trend: { fontSize: 13, fontWeight: '600' },
+  tip: { fontSize: 14, lineHeight: 20, color: '#1f6feb' },
+  storyNote: { fontSize: 13, color: '#8250df', fontStyle: 'italic' },
 });

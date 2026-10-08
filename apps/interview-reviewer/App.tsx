@@ -68,10 +68,17 @@ function Main() {
   const open = openId ? interviews.find((i) => i.id === openId) : undefined;
   if (open) {
     const oldestFirst = [...interviews].sort((a, b) => a.createdAt - b.createdAt);
+    // Latest earlier score for each area name.
+    const previousScores = new Map<string, number>();
+    for (const i of oldestFirst) {
+      if (i.createdAt >= open.createdAt) break;
+      for (const a of i.review?.areas ?? []) previousScores.set(a.name, a.score);
+    }
     return (
       <InterviewScreen
         interview={open}
         index={oldestFirst.findIndex((i) => i.id === open.id) + 1}
+        previousScores={previousScores}
         onBack={() => setOpenId(null)}
         onRetry={() => void retry(open)}
       />
