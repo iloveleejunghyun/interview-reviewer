@@ -4,8 +4,10 @@ Verify Posthog
 
 
 
-Recognize the type of interview rather than assuming it's a tech interview. We may not talk about a lot of tech details with a recruiter.
+Investigate the tradeoff of spliting responses.
 Copy transcript.
+Copy review.
+export audio.
 Rename the recording.
 Replay the recording.
 Conversations.
@@ -29,3 +31,5 @@ v Score every aspects: Communication skills,
 Use alternative story.
 
 v BQ. Construct good stories from your past experience.
+
+v Recognize the type of interview rather than assuming it's a tech interview. We may not talk about a lot of tech details with a recruiter. 

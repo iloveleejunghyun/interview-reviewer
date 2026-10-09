@@ -78,6 +78,12 @@ export function InterviewScreen({ interview, index, previousScores, onBack, onRe
 
       {done && interview.review && (
         <ScrollView contentContainerStyle={styles.content}>
+          {interview.review.interviewType && (
+            <Text style={styles.typeLabel}>
+              {interview.review.interviewType.round}
+              {interview.review.interviewType.interviewer ? ` · with ${interview.review.interviewType.interviewer}` : ''}
+            </Text>
+          )}
           {interview.review.areas && interview.review.areas.length > 0 && (
             <ScoresCard
               overall={interview.review.overallScore}
@@ -232,6 +238,7 @@ const styles = StyleSheet.create({
   stronger: { backgroundColor: '#eef6ff', borderRadius: 8, padding: 10, overflow: 'hidden' },
   footnote: { fontSize: 12, color: '#888', textAlign: 'center', marginTop: 8 },
   overall: { fontSize: 16, fontWeight: '700', color: '#1f6feb' },
+  typeLabel: { fontSize: 14, fontWeight: '600', color: '#555', textTransform: 'uppercase' },
   area: { paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#e3e5e8', gap: 3 },
   areaName: { fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 },
   areaScore: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },

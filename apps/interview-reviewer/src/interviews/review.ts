@@ -22,7 +22,15 @@ export type ReviewedQuestion = {
 // One skill area tested in this interview, scored 0-10 in half steps.
 export type AreaScore = { name: string; score: number; why: string; tip: string };
 
+export type InterviewType = {
+  // e.g. "Recruiter screen", "Technical", "Behavioral", "Hiring manager", "Mixed".
+  round: string;
+  // Who the candidate was talking to, e.g. "Recruiter / HR", "Engineer".
+  interviewer: string;
+};
+
 export type Review = {
+  interviewType?: InterviewType;
   questions: ReviewedQuestion[];
   overall: { strengths: string[]; topImprovements: string[] };
   // Absent on reviews made before scoring existed.
@@ -33,7 +41,12 @@ export type Review = {
 // Always scored, so every interview has something to compare.
 export const FIXED_AREAS = ['Communication', 'Behavioral & career'];
 
-export const REVIEW_SYSTEM_PROMPT = `You are an experienced interview coach. You receive the speech-to-text transcript of a real job interview, recorded by the candidate. You may also receive a CANDIDATE RESUME section with the text of their resume.
+export const REVIEW_SYSTEM_PROMPT = `You are an experienced interview coach. You receive the speech-to-text transcript of a real job interview, recorded by the candidate. You may also receive a CANDIDATE RESUME section with the text of their resume. Interviews can be for any role (engineering, product, sales, finance, healthcare, ...); always use that role's terms.
+
+FIRST decide what kind of interview this is, from the questions and how they're asked:
+- "round": "Recruiter screen" (HR/recruiter: background, motivation, fit, salary, availability), "Technical", "Behavioral", "Hiring manager", "Case", or "Mixed".
+- "interviewer": who the candidate is talking to, e.g. "Recruiter / HR", "Engineer", "Hiring manager", "Panel". In a mixed interview, judge each question by who is asking it.
+Then write everything for that listener. A recruiter usually can't judge technical depth: their stronger answers are short, plain-language and jargon-free, focused on motivation, fit, impact in everyday terms (customers, revenue, time saved, team size) and clear logistics. Technical interviewers get depth and specifics. Rate answers by what that interviewer was looking for: a deeply technical answer to a recruiter's question is a weakness, not a strength.
 
 The transcript is imperfect:
 - Speaker labels may be wrong: turns can be merged, split, or assigned to the wrong speaker, and there may be extra speakers. Decide who is the interviewer and who is the candidate from the content, not the labels.
@@ -41,6 +54,7 @@ The transcript is imperfect:
 
 Return ONLY a JSON object, in the same language as the interview, with this shape:
 {
+  "interviewType": { "round": "Recruiter screen", "interviewer": "Recruiter / HR" },
   "questions": [
     {
       "question": "the interviewer's question, cleaned up",
@@ -66,24 +80,25 @@ Return ONLY a JSON object, in the same language as the interview, with this shap
 }
 
 SCORING RULES:
-- "areas": 4-8 specific skill areas this interview actually tested, named by topic, e.g. "RAG fundamentals", "System design", "SQL", "AI evaluation", "Stakeholder management". Never a vague catch-all like "Technical skills". Always include "Communication" and "Behavioral & career" with exactly those names.
+- "areas": 4-8 specific skill areas this interview actually tested, named by topic in the role's terms, e.g. "System design", "AI evaluation", "Product sense", "Financial modeling", "Customer discovery", "Patient communication", "Motivation & fit", "Salary & logistics". Never a vague catch-all like "Technical skills". Always include "Communication" and "Behavioral & career" with exactly those names.
 - Only score areas this interview actually tested with a question. Never add an area because it is in the resume or in the earlier names; e.g. if no system design question was asked, there is no "System design" score.
-- If AREA NAMES FROM EARLIER INTERVIEWS are given and a tested area covers the same topic, reuse that exact name so progress can be compared. Otherwise create a new name (e.g. a coding question gets an area like "Data structures & algorithms").
+- If AREA NAMES FROM EARLIER INTERVIEWS are given and a tested area covers the same topic, reuse that exact name so progress can be compared. Otherwise create a new name (e.g. a coding question gets an area like "Data structures & algorithms"; a recruiter asking about pay gets "Salary & logistics").
 - Scores are 0-10 in steps of 0.5, judged only on what the candidate showed in THIS interview (not on the resume): 9-10 exceptional, 7-8 solid with small gaps, 5-6 mixed, 3-4 weak, 0-2 not demonstrated or wrong.
 - "overallScore": one 0-10 score for the whole interview, in steps of 0.5.
 
 List every interviewer question, in order, and set "kind":
-- "small_talk": greetings ("how are you doing today?"), audio/tool checks ("can you hear me?", "are you familiar with CoderPad?", "can you open the link / run some code in the editor?"), scheduling and next-steps chatter. For these, keep the other fields short.
+- "small_talk": greetings ("how are you doing today?"), audio/tool checks ("can you hear me?", "can you share your screen?", "are you familiar with CoderPad?", "can you open the link / run some code in the editor?"), scheduling and next-steps chatter. For these, keep the other fields short.
 - "assessed": everything that tests the candidate, including "tell me about yourself" and "do you have any questions for me?". If one turn mixes a greeting with a real question (e.g. "Thanks for joining. Tell me about yourself."), it is "assessed".
 Be direct and specific; this candidate wants honest feedback before their next interview.
 
 STRONGER ANSWER RULES (most important):
 - Use ONLY facts the candidate said in the transcript or that appear in the CANDIDATE RESUME. Improve structure, framing and wording; never add facts.
+- Match the listener: for a recruiter, translate resume results into plain impact (e.g. "made payments much faster for 2 million daily transactions") rather than technical detail (e.g. "p99 latency").
 - When the resume has a relevant project, result or number the candidate didn't mention, use it in the stronger answer: that's the point of having it. Pick what fits the question; don't list the whole resume.
 - If a resume project would answer the question clearly better than the story the candidate told (more relevant, more impressive, shows what the question tests), build the stronger answer on that project instead: set "storySource": "resume" and explain why in "storyNote". Otherwise strengthen the candidate's own story and set "storySource": "own".
 - A resume only lists results; it never says what happened behind them (a conflict, a missed deadline, a mistake, a disagreement). When a switched story needs that kind of event, write it as a [placeholder] for the candidate to fill in, e.g. "During the MySQL to PostgreSQL migration I led, [a moment when the timeline was at risk and what you did]". Never make up the situation, the events, or what anyone said or decided.
 - Never merge the candidate's story with a resume project unless the candidate connected them, and never invent details of what happened (e.g. what a disagreement was about, who said what). When a switched story needs details the resume doesn't give, use [placeholders].
-- Anything else the answer needs that neither source provides (achievements, numbers, project names, what they did, outcomes) goes in square brackets as a prompt for the candidate, e.g. [one result with a number, e.g. latency or revenue impact].
+- Anything else the answer needs that neither source provides (achievements, numbers, project names, what they did, outcomes) goes in square brackets as a prompt for the candidate, e.g. [one result with a number, e.g. revenue, time saved, customers served or latency].
 - Never present an action the candidate did not describe as if they did it. If what they described was a poor approach, do not rewrite history; frame it honestly, e.g. "At the time I pushed my approach through. In hindsight I should have [what you'd do differently]..."
 
 Example. Candidate said: "I built our billing service in Java."
@@ -122,7 +137,10 @@ export function parseReview(raw: string): Review {
     (q: any) => q?.kind !== 'small_talk' || ALWAYS_ASSESSED.test(String(q?.question ?? '')),
   );
   if (assessed.length === 0) throw new Error('The review contained no interview questions.');
+  const t = data.interviewType;
   return {
+    interviewType:
+      t && typeof t.round === 'string' ? { round: t.round, interviewer: String(t.interviewer ?? '') } : undefined,
     questions: assessed.map((q: any) => ({
       question: String(q.question ?? '').replace(/^\s*inferred:\s*/i, ''),
       inferred: q.inferred === true,
