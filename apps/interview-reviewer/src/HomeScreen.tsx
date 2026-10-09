@@ -5,6 +5,7 @@ import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { analytics } from './analytics';
+import { describeError, errorProps } from './errors';
 import { formatDate, formatDuration } from './format';
 import type { Interview, InterviewStatus } from './interviews/store';
 
@@ -16,6 +17,21 @@ const STATUS_LABEL: Record<InterviewStatus, string> = {
   failed: 'Failed. Tap to retry',
   'no-speech': 'Not enough speech',
 };
+
+// Short list label. Failures the app retries by itself (no connection, slow
+// response, app closed) must not look like errors the user has to act on.
+function statusLabel(i: Interview): { text: string; isError: boolean } {
+  if (i.status === 'failed' && i.retryable) {
+    const text =
+      i.errorCode === 'offline' || i.errorCode === 'network'
+        ? 'Waiting for connection'
+        : i.errorCode === 'unreachable'
+          ? "Can't reach service"
+          : 'Retrying soon';
+    return { text, isError: false };
+  }
+  return { text: STATUS_LABEL[i.status], isError: i.status === 'failed' };
+}
 
 type Props = {
   interviews: Interview[];
@@ -39,7 +55,8 @@ export function HomeScreen({ interviews, onRecorded, onOpen, hasBackground, onOp
       }
       analytics.track('recording_started');
     } catch (e) {
-      setMessage({ text: `Couldn't start recording: ${(e as Error).message}` });
+      analytics.track('recording_failed', { ...errorProps(describeError(e)), stage: 'start' });
+      setMessage({ text: "Couldn't start recording. Please try again, or restart the app if it keeps happening." });
     }
   };
 
@@ -49,7 +66,8 @@ export function HomeScreen({ interviews, onRecorded, onOpen, hasBackground, onOp
       analytics.track('recording_finished', { duration_sec: Math.round(recording.durationMs / 1000) });
       await onRecorded(recording.uri, recording.durationMs);
     } catch (e) {
-      setMessage({ text: `Couldn't save the recording: ${(e as Error).message}` });
+      analytics.track('recording_failed', { ...errorProps(describeError(e)), stage: 'save' });
+      setMessage({ text: "Couldn't save the recording. Please try recording again." });
     }
   };
 
@@ -104,8 +122,11 @@ export function HomeScreen({ interviews, onRecorded, onOpen, hasBackground, onOp
               <Text style={styles.rowTitle}>{formatDate(item.createdAt)}</Text>
               <Text style={styles.rowSub}>{formatDuration(item.durationMs)}</Text>
             </View>
-            <Text style={[styles.status, item.status === 'failed' && styles.error, item.status === 'done' && styles.ready]}>
-              {STATUS_LABEL[item.status]}
+            <Text
+              numberOfLines={1}
+              style={[styles.status, statusLabel(item).isError && styles.error, item.status === 'done' && styles.ready]}
+            >
+              {statusLabel(item).text}
             </Text>
           </Pressable>
         )}

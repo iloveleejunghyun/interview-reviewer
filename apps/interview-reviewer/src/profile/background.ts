@@ -4,6 +4,7 @@
 import { File, Paths } from 'expo-file-system';
 
 import { textModel } from '../ai';
+import { AppError } from '../errors';
 
 export type Background = {
   // Resume text without name/contact details.
@@ -44,7 +45,7 @@ export function removeBackground() {
 // Throws with a user-facing message on failure; nothing is saved then.
 export async function learnFromResume(pdf: File): Promise<Background> {
   const MAX_BYTES = 10 * 1024 * 1024;
-  if ((pdf.size ?? 0) > MAX_BYTES) throw new Error('This file is larger than 10 MB. Please choose a smaller PDF.');
+  if ((pdf.size ?? 0) > MAX_BYTES) throw new AppError('file_too_large', 'This file is larger than 10 MB. Please choose a smaller PDF.');
 
   const text = (
     await textModel.complete({
@@ -54,7 +55,7 @@ export async function learnFromResume(pdf: File): Promise<Background> {
     })
   ).trim();
   if (text === 'NOT_A_RESUME' || text.length < 40) {
-    throw new Error("This doesn't look like a resume. Please choose your resume PDF.");
+    throw new AppError('not_a_resume', "This doesn't look like a resume. Please choose your resume PDF.");
   }
 
   const background: Background = { text, sourceName: pdf.name, updatedAt: Date.now() };

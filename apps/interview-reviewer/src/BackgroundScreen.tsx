@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { analytics } from './analytics';
+import { describeError, errorProps } from './errors';
 import { formatDate } from './format';
 import { learnFromResume, removeBackground, type Background } from './profile/background';
 
@@ -24,7 +25,8 @@ export function BackgroundScreen({ background, onChange, onBack }: Props) {
     try {
       picked = await File.pickFileAsync({ mimeTypes: ['application/pdf'] });
     } catch (e) {
-      setError(`Couldn't open the file picker: ${(e as Error).message}`);
+      analytics.track('resume_failed', { ...errorProps(describeError(e)), code: 'picker_failed' });
+      setError("Couldn't open your files. Please try again.");
       return;
     }
     if (picked.canceled) return;
@@ -34,7 +36,9 @@ export function BackgroundScreen({ background, onChange, onBack }: Props) {
       analytics.track(background ? 'resume_replaced' : 'resume_added');
       onChange(b);
     } catch (e) {
-      setError((e as Error).message);
+      const d = describeError(e);
+      analytics.track('resume_failed', errorProps(d));
+      setError(d.userMessage);
     } finally {
       setBusy(false);
     }

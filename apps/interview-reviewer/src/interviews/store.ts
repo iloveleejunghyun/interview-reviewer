@@ -16,7 +16,9 @@ export type Interview = {
   durationMs: number;
   audioFile: string;
   status: InterviewStatus;
+  // Plain message shown to the user, and its short code (see src/errors.ts).
   error?: string;
+  errorCode?: string;
   // Step that failed, so Retry resumes there instead of starting over.
   failedStep?: 'transcribe' | 'review';
   // Network/timeout/interrupted failures; retried automatically when the app

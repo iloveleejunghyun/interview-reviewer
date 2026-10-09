@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { analytics } from '../analytics';
 import { markInterrupted, processInterview } from './pipeline';
 import { createInterview, loadInterviews, type Interview } from './store';
 
@@ -64,7 +65,10 @@ export function useInterviews() {
         commit(items.map(markInterrupted));
         resumeRetryable();
       })
-      .catch((e) => setLoadError((e as Error).message));
+      .catch(() => {
+        analytics.track('interviews_load_failed');
+        setLoadError("Couldn't load your interviews. Please restart the app.");
+      });
 
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') resumeRetryable();

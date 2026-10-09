@@ -4,6 +4,8 @@
 // achievements the candidate never mentioned.
 import type { Transcript } from '@factory/ai-client';
 
+import { AppError } from '../errors';
+
 export type Rating = 'strong' | 'ok' | 'weak';
 
 export type ReviewedQuestion = {
@@ -124,10 +126,10 @@ export function parseReview(raw: string): Review {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error('The review service returned an invalid response.');
+    throw new AppError('invalid_response', "The review didn't come out right. Please tap Retry.");
   }
   if (!Array.isArray(data?.questions) || data.questions.length === 0) {
-    throw new Error('The review contained no interview questions.');
+    throw new AppError('no_questions', "We couldn't find any interview questions in this recording.");
   }
   // Small talk is tagged by the model and dropped here: tagging is far more
   // reliable than asking the model to leave it out.
@@ -136,7 +138,9 @@ export function parseReview(raw: string): Review {
   const assessed = data.questions.filter(
     (q: any) => q?.kind !== 'small_talk' || ALWAYS_ASSESSED.test(String(q?.question ?? '')),
   );
-  if (assessed.length === 0) throw new Error('The review contained no interview questions.');
+  if (assessed.length === 0) {
+    throw new AppError('no_questions', "We couldn't find any interview questions in this recording.");
+  }
   const t = data.interviewType;
   return {
     interviewType:

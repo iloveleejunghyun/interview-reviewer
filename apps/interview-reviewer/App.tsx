@@ -53,7 +53,7 @@ function Main() {
   if (loadError) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>Couldn't load your interviews: {loadError}</Text>
+        <Text style={styles.error}>{loadError}</Text>
       </View>
     );
   }

@@ -5,6 +5,7 @@ import { AIServiceError } from '@factory/ai-client';
 
 import { textModel as reviewer, transcriber } from '../ai';
 import { analytics } from '../analytics';
+import { describeError, errorProps, withConnectivity } from '../errors';
 import { loadBackground } from '../profile/background';
 import { formatTranscript, parseReview, REVIEW_SYSTEM_PROMPT } from './review';
 import { audioUri, loadInterviews, saveInterview, type Interview } from './store';
@@ -12,11 +13,9 @@ import { audioUri, loadInterviews, saveInterview, type Interview } from './store
 // Below this many characters there's nothing an interview review can say.
 const MIN_TRANSCRIPT_CHARS = 200;
 
-// iOS suspends the app soon after it leaves the foreground, which kills
-// in-flight requests. Those failures (and app-closed interruptions) are
-// retried automatically when the user comes back.
-const isRetryable = (e: unknown) =>
-  e instanceof AIServiceError && (e.code === 'network' || e.code === 'timeout');
+// Network/timeout failures (iOS suspends the app soon after it leaves the
+// foreground, which kills in-flight requests) are marked retryable and
+// resumed automatically when the user comes back; see describeError.
 
 export async function processInterview(start: Interview, onUpdate: (i: Interview) => void) {
   let current = start;
@@ -25,11 +24,18 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
     saveInterview(current);
     onUpdate(current);
   };
-  const fail = (step: 'transcribe' | 'review', e: unknown) =>
-    update({ status: 'failed', failedStep: step, error: (e as Error).message, retryable: isRetryable(e) });
+  // The screen shows only the plain message; analytics gets only the code.
+  const fail = async (step: 'transcribe' | 'review', e: unknown) => {
+    const d = await withConnectivity(describeError(e));
+    analytics.track(step === 'transcribe' ? 'transcript_failed' : 'review_failed', {
+      ...errorProps(d),
+      auto_retry: d.retryable,
+    });
+    update({ status: 'failed', failedStep: step, error: d.userMessage, errorCode: d.code, retryable: d.retryable });
+  };
 
   if (!current.transcript) {
-    update({ status: 'transcribing', error: undefined, failedStep: undefined, retryable: undefined });
+    update({ status: 'transcribing', error: undefined, errorCode: undefined, failedStep: undefined, retryable: undefined });
     let transcript;
     try {
       transcript = await transcriber.transcribeFile(audioUri(current), {
@@ -38,16 +44,15 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
         onJobCreated: (transcriptJobId) => update({ transcriptJobId }),
       });
     } catch (e) {
-      analytics.track('transcript_failed', { reason: (e as Error).message.slice(0, 200) });
       // A failed or expired job can't be resumed; the next attempt starts a new one.
       const code = e instanceof AIServiceError ? e.code : undefined;
       if (code === 'job_error' || code === '404') update({ transcriptJobId: undefined });
-      fail('transcribe', e);
+      await fail('transcribe', e);
       return;
     }
     const chars = transcript.segments.reduce((n, s) => n + s.text.length, 0);
     if (chars < MIN_TRANSCRIPT_CHARS) {
-      analytics.track('transcript_failed', { reason: 'no_speech' });
+      analytics.track('transcript_no_speech', { duration_sec: Math.round(current.durationMs / 1000) });
       update({ status: 'no-speech' });
       return;
     }
@@ -58,7 +63,7 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
     update({ transcript });
   }
 
-  update({ status: 'reviewing', error: undefined, failedStep: undefined, retryable: undefined });
+  update({ status: 'reviewing', error: undefined, errorCode: undefined, failedStep: undefined, retryable: undefined });
   try {
     // The resume, if the user added one, lets stronger answers use their real
     // experience instead of [placeholders].
@@ -72,9 +77,15 @@ export async function processInterview(start: Interview, onUpdate: (i: Interview
         `Transcript:\n${formatTranscript(current.transcript!)}`,
       json: true,
     });
-    update({ status: 'done', review: parseReview(raw) });
+    const review = parseReview(raw);
+    analytics.track('review_succeeded', {
+      questions: review.questions.length,
+      has_resume: !!background?.text,
+      round: review.interviewType?.round ?? 'unknown',
+    });
+    update({ status: 'done', review });
   } catch (e) {
-    fail('review', e);
+    await fail('review', e);
   }
 }
 
@@ -98,7 +109,8 @@ export function markInterrupted(i: Interview): Interview {
     ...i,
     status: 'failed',
     failedStep: i.transcript ? 'review' : 'transcribe',
-    error: 'Processing was interrupted when the app closed.',
+    error: 'Processing paused when the app closed. It continues automatically.',
+    errorCode: 'interrupted',
     retryable: true,
   };
   saveInterview(fixed);
