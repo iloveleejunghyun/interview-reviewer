@@ -106,9 +106,12 @@ async function runPrompt(label, prompt) {
   let total = 0;
   const fails = [];
   const warns = [];
-  for (const c of CASES) {
-    for (let i = 1; i <= RUNS; i++) {
-      const { r, source } = await review(prompt, c);
+  // All calls in parallel: one after another took about 10 minutes.
+  const jobs = CASES.flatMap((c) => Array.from({ length: RUNS }, (_, k) => ({ c, i: k + 1 })));
+  const results = await Promise.all(jobs.map(({ c }) => review(prompt, c)));
+  for (const [n, { c, i }] of jobs.entries()) {
+    {
+      const { r, source } = results[n];
       const { out, warnings } = checks(c, r, source);
       for (const [k, v] of Object.entries(out)) {
         total++;
