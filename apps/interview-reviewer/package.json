@@ -31,7 +31,8 @@
     "start": "expo start",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "doctor": "npx --yes expo-doctor"
+    "doctor": "npx --yes expo-doctor",
+    "prompt-check": "NODE_USE_ENV_PROXY=1 node scripts/prompt-check/check.mjs"
   },
   "private": true
 }

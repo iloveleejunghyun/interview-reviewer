@@ -1,0 +1,22 @@
+ALEX CHEN
+alex.chen@example.com | +1 415 555 0134 | San Francisco, CA | linkedin.com/in/alexchen-example
+
+SUMMARY
+Backend engineer with 5 years of experience building payment systems in Go and Python.
+
+EXPERIENCE
+Senior Backend Engineer, PayFlow Inc. (2023 - present)
+- Rebuilt the payment ledger service in Go; cut p99 latency from 800 ms to 120 ms.
+- Service processes 2 million transactions per day across 14 countries.
+- Designed per-merchant rate limiting with Redis token buckets; reduced API abuse incidents by 70%.
+- Led a 4-engineer team through a database migration from MySQL to PostgreSQL with zero downtime.
+
+Backend Engineer, ShopLine (2021 - 2023)
+- Built checkout integrations with Stripe and Adyen in Python (Django).
+- Cut failed card payments by 18% by adding automatic retries with idempotency keys.
+
+EDUCATION
+B.S. Computer Science, University of Washington, 2021
+
+SKILLS
+Go, Python, PostgreSQL, Redis, Kafka, Kubernetes, AWS

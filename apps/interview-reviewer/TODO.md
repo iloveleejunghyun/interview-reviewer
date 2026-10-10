@@ -1,16 +1,18 @@
 
 
-Verify Posthog
 
 
+The answer is like text in book rather than a person will say verbally.
 
-Investigate the tradeoff of spliting responses.
+
 Copy transcript.
 Copy review.
 export audio.
 Rename the recording.
 Replay the recording.
 Conversations.
+
+Investigate the tradeoff of spliting responses.
 
 
 V Upload resume
@@ -33,3 +35,5 @@ Use alternative story.
 v BQ. Construct good stories from your past experience.
 
 v Recognize the type of interview rather than assuming it's a tech interview. We may not talk about a lot of tech details with a recruiter. 
+
+v Verify Posthog
